@@ -72,15 +72,15 @@ st.info("""
 2. Once enrolment data is shown, scroll down to view Attendance data.
 3. Use Attendance filters to explore weekly and gender-based trends.
 """)
-# ---- Logo ----
-logo_path = "assets/fca_logo1.png"
-if Path(logo_path).exists():
-    logo = Image.open(logo_path)
-    st.sidebar.image(logo, use_column_width=True)
+# --- Sidebar Logo at Top ---
+with st.sidebar:
+    logo_path = "assets/fca_logo1.png"
+    if Path(logo_path).exists():
+        logo = Image.open(logo_path)
+        st.image(logo, use_container_width=True)
 
 # ---- Load File ----
 data_path = Path("School Enrolment&Attendance/Enrolment Data vs Attendance Report.xlsx")
-
 if not data_path.exists():
     st.error(f"⚠️ File not found: '{data_path}' — make sure the file is in the app directory.")
     st.stop()
@@ -504,34 +504,42 @@ if (
         color_map = {school: color_palette[i % len(color_palette)] for i, school in enumerate(school_names)}
         attendance_summary_plot["Color"] = attendance_summary_plot["School_Name"].map(color_map)
 
+        # Assign a unique color to each school using Plotly's qualitative palette
+        color_palette = px.colors.qualitative.Plotly
+        school_names = attendance_summary_plot["School_Name"].tolist()
+        color_map = {school: color_palette[i % len(color_palette)] for i, school in enumerate(school_names)}
+        attendance_summary_plot["Color"] = attendance_summary_plot["School_Name"].map(color_map)
+
         fig = px.bar(
             attendance_summary_plot,
-            x="Attendance Rate (%)",
-            y="School_Name",
-            orientation="h",
+            x="School_Name",
+            y="Attendance Rate (%)",
             text=attendance_summary_plot["Attendance Rate (%)"].round(0).astype(int).astype(str) + "%",
-            title="Attendance Rate per School",
-            height=500,
-            hover_data={
-                "Attendance Rate (%)": True,
-                "Total_Attendance": True,
-                "Total_Enrolment": True,
-                "Boys_Attendance": True,
-                "Girls_Attendance": True
-            },
-            color="School_Name",  # Use School_Name for color differentiation
-            color_discrete_map=color_map
+            title="📊 Attendance Rate per School",
+            height=600,
+            width=1800,  # ✅ Manually increase width
+            color_discrete_sequence=["#1f77b4"]  # ✅ Single color to avoid splitting bars
         )
 
-        fig.update_traces(textposition='outside', marker_line_width=0)
-        fig.update_layout(
-            xaxis_title="Attendance Rate (%)",
-            yaxis_title="School",
-            showlegend=False,
-            bargap=0.3,
-            margin=dict(l=0, r=0, t=40, b=0)
+        fig.update_traces(
+            textposition='outside',
+            marker_line_width=1,
+            marker_line_color='black'
         )
-        st.plotly_chart(fig, use_container_width=True)
+
+        fig.update_layout(
+            xaxis_title="School",
+            yaxis_title="Attendance Rate (%)",
+            xaxis_tickangle=45,
+            bargap=0.02,  # ✅ Small gap = thicker bars
+            showlegend=False,
+            margin=dict(l=40, r=40, t=60, b=150),
+            xaxis=dict(categoryorder="total descending")  # ✅ Sorts for clarity
+        )
+
+        # 🚫 DO NOT use use_container_width
+        st.plotly_chart(fig)
+
     # ---- Attendance Charts ----
     for level, schools in school_order.items():
         st.markdown(f"---\n### 📊 {level} Attendance Charts — Term {selected_term}, {selected_week}")
